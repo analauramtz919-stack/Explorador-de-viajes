@@ -42,6 +42,12 @@ El proyecto permitirá:
 - módulos JavaScript
 - separación de responsabilidades
 
+## utils/filters.js
+
+- Normalización de texto
+- Aplicaion de filtros
+- eventos: input, change
+
 ## Arquitectura
 La aplicación utiliza una sola página HTML y divide progresivamente la lógica
 JavaScript en módulos según su responsabilidad.
