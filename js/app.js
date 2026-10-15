@@ -6,81 +6,50 @@ Archivo principal de la aplicación
 REFERENCIAS DEL DOM
 ========================================= */
 
-/* IMPORTS */
-import { obtenerPaises } from "./api/countriesApi.js";
+//IMPORTS
+import { getCountries } from './api/countriesAPI.js';
+import { mostrarCargando, mostrarError, renderizarPaises, actualizarContador } from './ui/ui.js';
 
-// estado de la aplicacion 
-let paises = [];
+/* =========================================
+ESTADO DE LA APLICACIÓN
+========================================= */
+let countries = [];
 
-//referencias del dom
-const destinationsContainer = document.querySelector(
-"#destinations-container"
-);
-const resultsCount = document.querySelector(
-"#results-count"
-);
+const destinationsContainer = document.querySelector('#destinations-container');
+const resultsCount = document.querySelector('#results-count');
+const initialMessage = document.querySelector('#initial-message');
 
-const initialMesage = document.querySelector('#initial-message');
 /* =========================================
 INICIALIZACIÓN DE LA APLICACIÓN
 ========================================= */
 async function init() {
-console.log("Explorador de Viajes iniciado");
-//resultsCount.textContent = "0 destinos";
+  console.log('Explorador de Viajes iniciado');
+  //resultsCount.textContent = `1 destino`;
 
-//mostrar estado de carga
-initialMesage.innerHTML = /* html */`
-<div class="text-5xl mb-4">
- 🌎
-</div>
+  //MOSTRAR RESULTADOS DE LA CARGA
+  mostrarCargando(destinationsContainer);
 
-<h3 class="
-            text-xl
-            font-semibold
-            text-slate-800
-            mb-2
-        "> Cargando destinos </h3>
+ // mostrarCargando(destinationsContainer);
+  //OBTENER DATOS DE LA API
+  countries = await getCountries();
+  console.log(countries);
 
-<p class = "text-slate-500"> Estamos consultado informacion de paises alrededor del mundo </p>
-`
 
-//obtener paises desde la api
-paises = await obtenerPaises();
-console.log('Paises obtenidos: ', paises);
 
-// actualizar contador
-resultsCount.textContent = `${paises.length} destinos`;
+  //Validar paises
+  if(countries.length === 0){
+    mostrarError(destinationsContainer);
+    actualizarContador(0, resultsCount);
+    return;
+  }
+    //RENDERIZAR PAISES
+    renderizarPaises(countries, destinationsContainer);
 
-//mostrar resultados de la carga
-if(paises.length > 0){
-    initialMesage.innerHTML = /* html */`
-    <div class="text-5xl mb-4">✅</div>
-     <h3 class="
-            text-xl
-            font-semibold
-            text-slate-800
-            mb-2
-        ">Destinos cargados</h3>
-    <p class = "text-slate-500"> Se obtuvieron ${paises.length} destinos correctamente </p>
-    
-    `;
-
-   
-}else {
-    //mostrar un mensaje si ocurre un error
-    initialMesage.innerHTML = /* html */`
-    <div class="text-5xl mb-4">⚠️</div>
-    <h3 class="
-            text-xl
-            font-semibold
-            text-slate-800
-            mb-2
-        ">No fue posible cargar los países</h3>
-    <p class = "text-slate-500"> Verifica tu conexión y vuelvelo a intentar </p>
-   `
+    //ACTUALIZAR CONTADOR
+    actualizarContador(countries.length, resultsCount);
+  
 }
 
-}
 /* =========================================
 INICIAR APLICACIÓN
 ========================================= */
