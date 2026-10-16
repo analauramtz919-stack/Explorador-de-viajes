@@ -8,8 +8,16 @@ REFERENCIAS DEL DOM
 
 //IMPORTS
 import { getCountries } from './api/countriesAPI.js';
-import { mostrarCargando, mostrarError, renderizarPaises, actualizarContador } from './ui/ui.js';
-import{procesarPaises} from './utils/filters.js';
+import {
+  mostrarCargando,
+  mostrarError,
+  renderizarPaises,
+  actualizarContador,
+  mostrarDetalle,
+  cerrarDetalle,
+} from './ui/ui.js';
+import { procesarPaises } from './utils/filters.js';
+import { crearMapa, destruirMapa } from './ui/mapUi.js';
 
 /* =========================================
 ESTADO DE LA APLICACIÓN
@@ -19,37 +27,85 @@ let countries = [];
 const destinationsContainer = document.querySelector('#destinations-container');
 const resultsCount = document.querySelector('#results-count');
 const initialMessage = document.querySelector('#initial-message');
-const searchInput = document.querySelector('#search-input');
-const continentFilter = document.querySelector('#continent-filter');
+const buscador = document.querySelector('#search-input');
+const continenteBuscador = document.querySelector('#continent-filter');
 const sortFilter = document.querySelector('#sort-filter');
+const detailModal = document.querySelector('#detail-modal');
+const detailModalContent = document.querySelector('#detail-modal-content');
 
-//aplicar filtros
-function aplicarFiltros(){
-    //valor input
-    const texto = searchInput.value;
-
-    // valor continente
-    const continente = continentFilter.value;
-
-    // valor criterio de orden
-    const criterioOrden = sortFilter.value;
-
-    const resultado = procesarPaises(countries, texto, continente, criterioOrden);
-
-    //renderizar paises 
-    renderizarPaises(resultado, destinationsContainer);
-    actualizarContador(resultado.length, resultsCount);
-
+function obtenerPaisPorCodigo(codigo) {
+  return countries.find((pais) => pais.codes?.alpha_3 === codigo);
+}
+// Abrir detalles
+function abrirDetalles(codigo) {
+  const pais = obtenerPaisPorCodigo(codigo);
+  if (!pais) {
+    console.warn('Pais no encontrado');
+    return;
+  }
+  const datosMapa = mostrarDetalle(pais, detailModal, detailModalContent);
+  setTimeout(() => {
+    crearMapa(datosMapa.latitud, datosMapa.longitud, datosMapa.nombre);
+  }, 0);
 }
 
-//registrar eventos
-function registrarEventos(){
+function aplicarFiltros() {
+  const texto = buscador.value;
 
-    searchInput.addEventListener("input", aplicarFiltros);
+  const continente = continenteBuscador.value;
 
-    continentFilter.addEventListener("change", aplicarFiltros);
+  const criterioOrden = sortFilter.value;
 
-    sortFilter.addEventListener("change", aplicarFiltros);
+  const resultado = procesarPaises(countries, texto, continente, criterioOrden);
+
+  // Renderizar los resultados filtrados
+  renderizarPaises(resultado, destinationsContainer);
+  actualizarContador(resultado.length, resultsCount);
+}
+
+/* =========================================
+Registrar Eventos
+========================================= */
+
+function registrarEventos() {
+  buscador.addEventListener('input', aplicarFiltros);
+  continenteBuscador.addEventListener('change', aplicarFiltros);
+  sortFilter.addEventListener('change', aplicarFiltros);
+  // Acciones de las tarjetas
+  destinationsContainer.addEventListener('click', (event) => {
+    const boton = event.target.closest('[data-action]');
+    if (!boton) {
+      return;
+    }
+    const accion = boton.dataset.action;
+    const codigo = boton.dataset.countryCode;
+
+    if (accion === 'detail') {
+      abrirDetalles(codigo);
+    }
+  });
+  //Cerrar modal
+
+  detailModal.addEventListener("click", (event) => {
+    if (event.target.id === "btn-close-detail"){
+      cerrarModalDetalle();
+    }
+    if(event.target === detailModal){
+      cerrarModalDetalle();
+    }
+  });
+
+  // Cerrar con ESC
+  document.addEventListener("keydown", (event) => {
+    if(event.key === "Escape" && !detailModal.classList.classList.contains("hidden")){
+      cerrarModalDetalle();
+    }
+  });
+}
+
+function cerrarModalDetalle() {
+  destruirMapa();
+  cerrarDetalle(detailModal, detailModalContent);
 }
 
 /* =========================================
@@ -62,30 +118,44 @@ async function init() {
   //MOSTRAR RESULTADOS DE LA CARGA
   mostrarCargando(destinationsContainer);
 
- // mostrarCargando(destinationsContainer);
+  // mostrarCargando(destinationsContainer);
   //OBTENER DATOS DE LA API
   countries = await getCountries();
   console.log(countries);
 
-
-
   //Validar paises
-  if(countries.length === 0){
+  if (countries.length === 0) {
     mostrarError(destinationsContainer);
     actualizarContador(0, resultsCount);
     return;
   }
-    // //RENDERIZAR PAISES
-    // renderizarPaises(countries, destinationsContainer);
 
-    // //ACTUALIZAR CONTADOR
-    // actualizarContador(countries.length, resultsCount);
+  //Aplicar filtros reemplaza a renderizar paises y actualizar contador.
+  aplicarFiltros();
 
-    //mostrar resultados iniciales
-    aplicarFiltros();
+  // //RENDERIZAR PAISES
+  // renderizarPaises(countries, destinationsContainer);
 
-  
-    registrarEventos();
+  // //ACTUALIZAR CONTADOR
+  // actualizarContador(countries.length, resultsCount);
+
+  registrarEventos();
+
+  // //AGREGAR EVENTO DE BUSQUEDA
+  // buscador.addEventListener('input', (event) => {
+  //   // const textoBuscado = event.target.value;
+  //   // const paisesFiltrados = buscarPaises(countries, textoBuscado);
+  //   renderizarPaises(aplicarFiltros(), destinationsContainer);
+  // });
+
+  // Busqueda por continente
+
+  // continenteBuscador.addEventListener('input', (event) => {
+  //   // const continentSelected = event.target.value;
+  //   // const paisesEncontrados = filtrarPorContinente(countries, continentSelected);
+
+  //   renderizarPaises(paisesEncontrados, destinationsContainer)
+  // })
 }
 
 /* =========================================
